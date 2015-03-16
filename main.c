@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+<<<<<<< HEAD
 #include <unistd.h>
 
 typedef struct cnode{
@@ -28,6 +29,8 @@ void CPrintList(CListPtr list);
 
 
 CListPtr command;
+=======
+>>>>>>> f3c9dcf257e605147eaeecbf8ccb30628178f4ff
 
 int main()
 {
@@ -35,6 +38,7 @@ int main()
     printf("Beginning shell.\n");
     printf("Enter an empty line to exit.\n");
     do{
+<<<<<<< HEAD
 		//create a list of arguments
 		command = CListCreate();
 		int index = 0, complete = 0, commandIndex = 0;
@@ -206,3 +210,13 @@ void CPrintList(CListPtr list){
 		tmp = tmp->next;
 	}
 }
+=======
+        fputs(to_parse,stdout);
+        printf("\n$>");
+    }while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n');
+    /*printf("Completed reading in. Press enter to exit.\n");
+    gets(to_parse);*/
+    return 0;
+}
+
+>>>>>>> f3c9dcf257e605147eaeecbf8ccb30628178f4ff
