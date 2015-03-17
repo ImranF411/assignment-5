@@ -40,7 +40,6 @@ int main()
     do{
 <<<<<<< HEAD
 
-        	printf("\n$>");
 		//create a list of arguments
 		command = CListCreate();
 		int index = 0, complete = 0, commandIndex = 0;
@@ -133,6 +132,7 @@ int main()
 		}
 
     		fputs(to_parse,stdout);
+        	printf("\n$>");
 		//forkAndKnife(--INSERT COMMAND HERE--);
 		
 		CListDestroy(command);
