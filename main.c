@@ -25,7 +25,11 @@ int CListInsert(CListPtr list, char* command);
 int CListRemove(CListPtr list);
 /*Prints command list*/
 void CPrintList(CListPtr list);
-
+/*Forks and executes command*/
+void forkAndKnife(cnode head);
+/*Parent process waits for command running process in here.
+ *Parent prints exit status.*/
+void waitingRoom();
 
 CListPtr command;
 
@@ -103,7 +107,7 @@ int main()
 				memcpy(myCommand, "\0", 100);
 				CPrintList(command);
 				while(CListRemove(command) != 0){
-				   
+
 				}
 				continue;
 			}
@@ -112,7 +116,7 @@ int main()
 			}
 			commandIndex++;
 			index++;
-			
+
 			if(index >= strlen(to_parse)){
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex-1] = '\0';
@@ -126,12 +130,12 @@ int main()
 			}
 		}
 
+    		/*forkAndKnife call here*/
     		fputs(to_parse,stdout);
         	printf("\n$>");
-		//forkAndKnife(--INSERT COMMAND HERE--);
-		
+
 		CListDestroy(command);
-	
+
     }while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n');
     /*printf("Completed reading in. Press enter to exit.\n");
  *     gets(to_parse);*/
@@ -144,13 +148,13 @@ int main()
  * If the fork fails, the process exits with status 1.
  * If the execvp fails, the child process exits with status 1.
  */
-void forkAndKnife(char argv[][]){ //Assuming command is in a string array. Adjust this as necessary.
+void forkAndKnife(cnode head){ //Assuming command is in a string array. Adjust this as necessary.
 	int pid;
 	switch(pid = fork()){
 	//Child process case
 	case 0:
 		//call execvp here because it searches path for command. We won't have to search it ourselves
-		execvp(argv[0], argv);	//Adjust Here as well.
+		execvp(NULL,NULL);	//Adjust Here as well.
 		perror("failed execvp");
 		exit(1);
 		break;
@@ -161,7 +165,7 @@ void forkAndKnife(char argv[][]){ //Assuming command is in a string array. Adjus
 		break;
 	//Parent process case
 	default:
-		ret = waitingRoom(pid);
+		waitingRoom(pid);
 		break;
 	}
 	return;
@@ -174,7 +178,7 @@ void waitingRoom(){
 
 	int status,pid;
 	//Parent loops on wait until wait returns -1, which is when all child processes have finished.
-	whlie ((pid = wait(&status)) != -1)
+	while ((pid = wait(&status)) != -1)
 		//Parent prints the exit status of each completed child process.
 		fprintf(stderr, "Child process %d exits with %d.\n",pid, WEXITSTATUS(status));
 	return;
@@ -184,7 +188,7 @@ void waitingRoom(){
 CListPtr CListCreate(){
 	CListPtr newList = malloc(sizeof(CListPtr));
 	newList->head = NULL;
-	return newList; 
+	return newList;
 }
 
 /*Destroys a linked list.*/
@@ -210,7 +214,7 @@ int CListInsert(CListPtr list, char* command){
 	cnode* newNode = (cnode*)malloc(sizeof(cnode));
 	strcpy(newNode->command, command);
 	newNode->next = list->head;
-	list->head = newNode;	
+	list->head = newNode;
 	return 0;
 
 }
@@ -239,7 +243,7 @@ void CPrintList(CListPtr list){
 	printf("Command List:");
 	while(tmp != NULL){
 		if(tmp->next == NULL){
-			
+
 			printf("%s \n", tmp->command);
 			return;
 		}
