@@ -32,6 +32,7 @@ void forkAndKnife(cnode head);
 void waitingRoom();
 
 CListPtr command;
+char acommand [50][50];
 
 int main()
 {
@@ -41,7 +42,7 @@ int main()
     do{
 		//create a list of arguments
 		command = CListCreate();
-		int index = 0, complete = 0, commandIndex = 0;
+		int index = 0, complete = 0, commandIndex = 0, aindex = 0;
 		char myCommand [100];
 
 		//Go through to_parse until we have processed all commands
@@ -59,6 +60,8 @@ int main()
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
 					CListInsert(command, myCommand);
+					strcpy(acommand[aindex], myCommand);
+					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 				}
@@ -77,6 +80,8 @@ int main()
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
 					CListInsert(command, myCommand);
+					strcpy(acommand[aindex], myCommand);
+					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 				}
@@ -88,6 +93,8 @@ int main()
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
 					CListInsert(command, myCommand);
+					strcpy(acommand[aindex], myCommand);
+					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 					continue;
@@ -95,20 +102,30 @@ int main()
 			}
 
 			//If we hit a pipe, entire argument is stored in list and ready for processing
+			//Process where CPrintList is called
 			if(to_parse[index] == '|'){
 				index++;
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
 					CListInsert(command, myCommand);
+					strcpy(acommand[aindex], myCommand);
+					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 				}
 				commandIndex = 0;
 				memcpy(myCommand, "\0", 100);
 				CPrintList(command);
+
+				int i = 0;
+				while(i < aindex){
+					memcpy(acommand[i], "\0", 50);
+					i++;	
+				}
 				while(CListRemove(command) != 0){
 
 				}
+				aindex = 0;
 				continue;
 			}
 			if(to_parse[index] != '\n'){
@@ -117,15 +134,25 @@ int main()
 			commandIndex++;
 			index++;
 
+
+			//If we reach the end of the input command / list of commands
+			//Process final command where CPrintList is called
 			if(index >= strlen(to_parse)){
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex-1] = '\0';
 					CListInsert(command, myCommand);
+					strcpy(acommand[aindex], myCommand);
+					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 				}
-
 				CPrintList(command);
+
+				int i = 0;
+				while(i < aindex){
+					memcpy(acommand[i], "\0", 50);
+					i++;	
+				}
 				complete = 1;
 			}
 		}
@@ -213,8 +240,16 @@ int CListInsert(CListPtr list, char* command){
 	}
 	cnode* newNode = (cnode*)malloc(sizeof(cnode));
 	strcpy(newNode->command, command);
-	newNode->next = list->head;
-	list->head = newNode;
+	if(list->head == NULL){
+		list->head = newNode;
+	}else{
+		cnode * tmp = list->head;
+		while(tmp->next != NULL){
+			tmp = tmp->next;
+		}
+		tmp->next = newNode;
+	}
+	
 	return 0;
 
 }
