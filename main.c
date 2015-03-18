@@ -26,7 +26,7 @@ int CListRemove(CListPtr list);
 /*Prints command list*/
 void CPrintList(CListPtr list);
 /*Forks and executes command*/
-void forkAndKnife(cnode head);
+void forkAndKnife(char acommand[50][50]);
 /*Parent process waits for command running process in here.
  *Parent prints exit status.*/
 void waitingRoom();
@@ -116,11 +116,13 @@ int main()
 				commandIndex = 0;
 				memcpy(myCommand, "\0", 100);
 				CPrintList(command);
+				//acommand[aindex] = NULL;
+                forkAndKnife(acommand);
 
 				int i = 0;
 				while(i < aindex){
 					memcpy(acommand[i], "\0", 50);
-					i++;	
+					i++;
 				}
 				while(CListRemove(command) != 0){
 
@@ -147,18 +149,20 @@ int main()
 					commandIndex = 0;
 				}
 				CPrintList(command);
+				//acommand[aindex] = NULL;
+				forkAndKnife(acommand);
 
 				int i = 0;
 				while(i < aindex){
 					memcpy(acommand[i], "\0", 50);
-					i++;	
+					i++;
 				}
 				complete = 1;
 			}
 		}
 
-    		/*forkAndKnife call here*/
-    		fputs(to_parse,stdout);
+    		//forkAndKnife(acommand);
+    		//fputs(to_parse,stdout);
         	printf("\n$>");
 
 		CListDestroy(command);
@@ -175,14 +179,15 @@ int main()
  * If the fork fails, the process exits with status 1.
  * If the execvp fails, the child process exits with status 1.
  */
-void forkAndKnife(cnode head){ //Assuming command is in a string array. Adjust this as necessary.
+void forkAndKnife(char acommand[50][50]){ //Assuming command is in a string array. Adjust this as necessary.
 	int pid;
 	switch(pid = fork()){
 	//Child process case
 	case 0:
 		//call execvp here because it searches path for command. We won't have to search it ourselves
-		execvp(NULL,NULL);	//Adjust Here as well.
-		perror("failed execvp");
+		//use execlp so we can add the null terminator into the execlp call.
+		execlp(acommand[0], acommand, (char *)0);	//Adjust Here as well.
+		perror("failed execlp");
 		exit(1);
 		break;
 	//fork() fails case
@@ -249,7 +254,7 @@ int CListInsert(CListPtr list, char* command){
 		}
 		tmp->next = newNode;
 	}
-	
+
 	return 0;
 
 }
