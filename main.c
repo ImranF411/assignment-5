@@ -26,12 +26,11 @@ int CListRemove(CListPtr list);
 /*Prints command list*/
 void CPrintList(CListPtr list);
 /*Forks and executes command*/
-void forkAndKnife(char acommand[50][50]);
+void forkAndKnife(char acommand[50][50], int index);
 /*Parent process waits for command running process in here.
  *Parent prints exit status.*/
 void waitingRoom();
 
-CListPtr command;
 char acommand [50][50];
 
 int main()
@@ -40,8 +39,6 @@ int main()
     printf("Beginning shell.\n");
     printf("Enter an empty line to exit.\n");
     do{
-		//create a list of arguments
-		command = CListCreate();
 		int index = 0, complete = 0, commandIndex = 0, aindex = 0;
 		char myCommand [100];
 
@@ -59,7 +56,6 @@ int main()
 
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
-					CListInsert(command, myCommand);
 					strcpy(acommand[aindex], myCommand);
 					aindex++;
 					memcpy(myCommand, "\0", 100);
@@ -79,7 +75,6 @@ int main()
 
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
-					CListInsert(command, myCommand);
 					strcpy(acommand[aindex], myCommand);
 					aindex++;
 					memcpy(myCommand, "\0", 100);
@@ -92,7 +87,6 @@ int main()
 				index++;
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
-					CListInsert(command, myCommand);
 					strcpy(acommand[aindex], myCommand);
 					aindex++;
 					memcpy(myCommand, "\0", 100);
@@ -107,7 +101,6 @@ int main()
 				index++;
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex] = '\0';
-					CListInsert(command, myCommand);
 					strcpy(acommand[aindex], myCommand);
 					aindex++;
 					memcpy(myCommand, "\0", 100);
@@ -115,17 +108,12 @@ int main()
 				}
 				commandIndex = 0;
 				memcpy(myCommand, "\0", 100);
-				CPrintList(command);
-				//acommand[aindex] = NULL;
-                forkAndKnife(acommand);
+             			forkAndKnife(acommand, aindex);
 
 				int i = 0;
 				while(i < aindex){
 					memcpy(acommand[i], "\0", 50);
 					i++;
-				}
-				while(CListRemove(command) != 0){
-
 				}
 				aindex = 0;
 				continue;
@@ -142,15 +130,13 @@ int main()
 			if(index >= strlen(to_parse)){
 				if(strlen(myCommand) != 0){
 					myCommand[commandIndex-1] = '\0';
-					CListInsert(command, myCommand);
 					strcpy(acommand[aindex], myCommand);
 					aindex++;
 					memcpy(myCommand, "\0", 100);
 					commandIndex = 0;
 				}
-				CPrintList(command);
-				//acommand[aindex] = NULL;
-				forkAndKnife(acommand);
+				memcpy(acommand[aindex], "\0", 50);
+				forkAndKnife(acommand, aindex);
 
 				int i = 0;
 				while(i < aindex){
@@ -165,7 +151,6 @@ int main()
     		//fputs(to_parse,stdout);
         	printf("\n$>");
 
-		CListDestroy(command);
 
     }while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n');
     /*printf("Completed reading in. Press enter to exit.\n");
@@ -179,14 +164,25 @@ int main()
  * If the fork fails, the process exits with status 1.
  * If the execvp fails, the child process exits with status 1.
  */
-void forkAndKnife(char acommand[50][50]){ //Assuming command is in a string array. Adjust this as necessary.
+void forkAndKnife(char acommand[50][50], int index){ //Assuming command is in a string array. Adjust this as necessary.
 	int pid;
+	int i = 0;
+
+	char* pcommand [50];	
+
+	while(i < index){
+		pcommand[i] = acommand[i];
+		i++;	
+	}
+
+	pcommand[index] = NULL;
+
 	switch(pid = fork()){
 	//Child process case
 	case 0:
 		//call execvp here because it searches path for command. We won't have to search it ourselves
 		//use execlp so we can add the null terminator into the execlp call.
-		execlp(acommand[0], acommand, (char *)0);	//Adjust Here as well.
+		execvp(pcommand[0], pcommand);	//Adjust Here as well.
 		perror("failed execlp");
 		exit(1);
 		break;
