@@ -37,8 +37,8 @@ int saved_stdout;
 
 int main()
 {
-//	saved_stdin = dup(0);
-//	saved_stdout = dup(1);
+	saved_stdin = dup(0);
+	saved_stdout = dup(1);
     char* to_parse = (char*) calloc(MAX_SIZE,sizeof(char));
     
 	if(isatty(0))
@@ -48,13 +48,13 @@ int main()
 		int index = 0, complete = 0, commandIndex = 0, aindex = 0, isFirst = 1;
 		char myCommand [100];
 
+		//Create pipe
 		int fd[2];
+		pipe(fd);		
 
 		//Go through to_parse until we have processed all commands
 		while(index < strlen(to_parse) && !complete){
 			
-			/*create pipes*/
-//			pipe(fd);
 
 			//If we hit a " then get the full argument
 			if(to_parse[index] == '\"'){
@@ -165,7 +165,7 @@ int main()
 
     		//forkAndKnife(acommand);
     		//fputs(to_parse,stdout);
-//		close(fd[0]); close(fd[1]);	//close pipes.
+		close(fd[0]); close(fd[1]);	//close pipes.
     		waitingRoom();			//Wait for child processes to die
         	printf("\n$>");
 	}
@@ -200,14 +200,16 @@ void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int i
 		//call execvp here because it searches path for command. We won't have to search it ourselves
 		//Pipe work done here
 
-		/*if(!isFirst)
-			dup2(pfd[0],0); //Change standard input if not 1st command
+		if(isFirst)
+			close(pfd[0]);  //1st command does not need incoming end.
+		else
+			dup2(pfd[0],0);
 
-		dup2(pfd[1],1);		//Change standard output
-
-		if(isFinal)		//Restore initial stdout if final command
-			dup2(saved_stdout,1);*/
-
+		if(isFinal){
+			close(pfd[1]); //Last command does not need outgoing end.
+		}else{
+			dup2(pfd[1],1);
+		}
 		execvp(pcommand[0], pcommand);
 		perror("failed execlp");
 		exit(1);
