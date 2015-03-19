@@ -26,24 +26,36 @@ int CListRemove(CListPtr list);
 /*Prints command list*/
 void CPrintList(CListPtr list);
 /*Forks and executes command*/
-void forkAndKnife(char acommand[50][50], int index);
+void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int isFinal);
 /*Parent process waits for command running process in here.
  *Parent prints exit status.*/
 void waitingRoom();
 
 char acommand [50][50];
+int saved_stdin;
+int saved_stdout;
 
 int main()
 {
+//	saved_stdin = dup(0);
+//	saved_stdout = dup(1);
     char* to_parse = (char*) calloc(MAX_SIZE,sizeof(char));
-    printf("Beginning shell.\n");
-    printf("Enter an empty line to exit.\n");
-    do{
-		int index = 0, complete = 0, commandIndex = 0, aindex = 0;
+    
+	if(isatty(0))
+		printf("$>");
+    
+    	while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n'){
+		int index = 0, complete = 0, commandIndex = 0, aindex = 0, isFirst = 1;
 		char myCommand [100];
+
+		int fd[2];
 
 		//Go through to_parse until we have processed all commands
 		while(index < strlen(to_parse) && !complete){
+			
+			/*create pipes*/
+//			pipe(fd);
+
 			//If we hit a " then get the full argument
 			if(to_parse[index] == '\"'){
 				index++;
@@ -108,8 +120,11 @@ int main()
 				}
 				commandIndex = 0;
 				memcpy(myCommand, "\0", 100);
-             			forkAndKnife(acommand, aindex);
 
+             			forkAndKnife(acommand, aindex, fd, isFirst, 0); //Execute command
+				isFirst = 0;
+
+				/*Empty out string holding command*/
 				int i = 0;
 				while(i < aindex){
 					memcpy(acommand[i], "\0", 50);
@@ -136,8 +151,9 @@ int main()
 					commandIndex = 0;
 				}
 				memcpy(acommand[aindex], "\0", 50);
-				forkAndKnife(acommand, aindex);
-
+				forkAndKnife(acommand, aindex, fd, isFirst, 1);
+				
+				/*empty out string holding command*/
 				int i = 0;
 				while(i < aindex){
 					memcpy(acommand[i], "\0", 50);
@@ -149,10 +165,11 @@ int main()
 
     		//forkAndKnife(acommand);
     		//fputs(to_parse,stdout);
+//		close(fd[0]); close(fd[1]);	//close pipes.
+    		waitingRoom();			//Wait for child processes to die
         	printf("\n$>");
+	}
 
-
-    }while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n');
     /*printf("Completed reading in. Press enter to exit.\n");
  *     gets(to_parse);*/
     return 0;
@@ -164,7 +181,7 @@ int main()
  * If the fork fails, the process exits with status 1.
  * If the execvp fails, the child process exits with status 1.
  */
-void forkAndKnife(char acommand[50][50], int index){ //Assuming command is in a string array. Adjust this as necessary.
+void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int isFinal){
 	int pid;
 	int i = 0;
 
@@ -181,10 +198,20 @@ void forkAndKnife(char acommand[50][50], int index){ //Assuming command is in a 
 	//Child process case
 	case 0:
 		//call execvp here because it searches path for command. We won't have to search it ourselves
-		//use execlp so we can add the null terminator into the execlp call.
-		execvp(pcommand[0], pcommand);	//Adjust Here as well.
+		//Pipe work done here
+
+		/*if(!isFirst)
+			dup2(pfd[0],0); //Change standard input if not 1st command
+
+		dup2(pfd[1],1);		//Change standard output
+
+		if(isFinal)		//Restore initial stdout if final command
+			dup2(saved_stdout,1);*/
+
+		execvp(pcommand[0], pcommand);
 		perror("failed execlp");
 		exit(1);
+
 		break;
 	//fork() fails case
 	case -1:
@@ -193,7 +220,6 @@ void forkAndKnife(char acommand[50][50], int index){ //Assuming command is in a 
 		break;
 	//Parent process case
 	default:
-		waitingRoom(pid);
 		break;
 	}
 	return;
