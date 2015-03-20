@@ -37,9 +37,11 @@ void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int i
  *Parent prints exit status.*/
 void waitingRoom();
 /*built in function for cd*/
-int cdFunc(int argc, char **argv);
+int cdFunc(int argc, char *argv[]);
 /*built in function for exit*/
-int exitFunc(int argc, char **argv);
+int exitFunc(int argc, char *argv[]);
+
+int searchFuncTable(char *command[]);
 
 char acommand [50][50];
 
@@ -294,7 +296,7 @@ int searchFuncTable(char *command[]){
             for(;a < argc;a++){
                 fprintf(stderr,"%s\n",command[a]);
             }
-            int fnc = (*(funcTable[i].fnc))(argc,command);
+            int fnc = (*funcTable[i].fnc)(argc,command);
             return 1;
         }
     }
