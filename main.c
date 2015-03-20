@@ -1,8 +1,3 @@
-/* This shell program made by:
- * Imran Farooqui
- * Michael Sabbagh
- * */
-
 #define MAX_SIZE 2048
 
 #include <stdio.h>
