@@ -15,6 +15,12 @@ struct clist{
 };
 typedef struct clist* CListPtr;
 
+/*Built-in function table element*/
+typedef struct builtins{
+    char *name;
+    int (*fnc)();
+}fncEntry;
+
 /*Creates a new list. Returns the pointer.*/
 CListPtr CListCreate();
 /*Destroys a list when given pointer.*/
@@ -30,142 +36,150 @@ void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int i
 /*Parent process waits for command running process in here.
  *Parent prints exit status.*/
 void waitingRoom();
+/*built in function for cd*/
+int cdFunc(int argc, char **argv);
+/*built in function for exit*/
+int exitFunc(int argc, char **argv);
 
 char acommand [50][50];
-int saved_stdin;
-int saved_stdout;
+
+fncEntry funcTable[2];
 
 int main()
 {
-	saved_stdin = dup(0);
-	saved_stdout = dup(1);
     char* to_parse = (char*) calloc(MAX_SIZE,sizeof(char));
-    
+
+    fncEntry cdEntry = {"cd",&cdFunc};
+    fncEntry exitEntry = {"exit",&exitFunc};
+
+    funcTable[0] = cdEntry;
+    funcTable[1] = exitEntry;
+
 	if(isatty(0))
 		printf("$>");
-    
+
     	while(fgets(to_parse,MAX_SIZE,stdin) != NULL && to_parse[0] != '\n'){
-		int index = 0, complete = 0, commandIndex = 0, aindex = 0, isFirst = 1;
-		char myCommand [100];
+            int index = 0, complete = 0, commandIndex = 0, aindex = 0, isFirst = 1;
+            char myCommand [100];
 
-		//Create pipe
-		int fd[2];
-		pipe(fd);		
+            //Create pipe
+            int fd[2];
+            pipe(fd);
 
-		//Go through to_parse until we have processed all commands
-		while(index < strlen(to_parse) && !complete){
-			
-
-			//If we hit a " then get the full argument
-			if(to_parse[index] == '\"'){
-				index++;
-				while((to_parse[index] != '\"') && (index < strlen(to_parse))){
-					myCommand[commandIndex] = to_parse[index];
-					commandIndex++;
-					index++;
-				}
-				index++;
-
-				if(strlen(myCommand) != 0){
-					myCommand[commandIndex] = '\0';
-					strcpy(acommand[aindex], myCommand);
-					aindex++;
-					memcpy(myCommand, "\0", 100);
-					commandIndex = 0;
-				}
-				continue;
-			}
-			//If we hit a ' then get the full argument
-			if(to_parse[index] == '\''){
-				index++;
-				while((to_parse[index] != '\'') && (index < strlen(to_parse))){
-					myCommand[commandIndex] = to_parse[index];
-					commandIndex++;
-					index++;
-				}
-				index++;
-
-				if(strlen(myCommand) != 0){
-					myCommand[commandIndex] = '\0';
-					strcpy(acommand[aindex], myCommand);
-					aindex++;
-					memcpy(myCommand, "\0", 100);
-					commandIndex = 0;
-				}
-				continue;
-			}
-			//If we hit a space, store the argument in the list
-			if(to_parse[index] == ' '){
-				index++;
-				if(strlen(myCommand) != 0){
-					myCommand[commandIndex] = '\0';
-					strcpy(acommand[aindex], myCommand);
-					aindex++;
-					memcpy(myCommand, "\0", 100);
-					commandIndex = 0;
-					continue;
-				}
-			}
-
-			//If we hit a pipe, entire argument is stored in list and ready for processing
-			//Process where CPrintList is called
-			if(to_parse[index] == '|'){
-				index++;
-				if(strlen(myCommand) != 0){
-					myCommand[commandIndex] = '\0';
-					strcpy(acommand[aindex], myCommand);
-					aindex++;
-					memcpy(myCommand, "\0", 100);
-					commandIndex = 0;
-				}
-				commandIndex = 0;
-				memcpy(myCommand, "\0", 100);
-
-             			forkAndKnife(acommand, aindex, fd, isFirst, 0); //Execute command
-				isFirst = 0;
-
-				/*Empty out string holding command*/
-				int i = 0;
-				while(i < aindex){
-					memcpy(acommand[i], "\0", 50);
-					i++;
-				}
-				aindex = 0;
-				continue;
-			}
-			if(to_parse[index] != '\n'){
-				myCommand[commandIndex] = to_parse[index];
-			}
-			commandIndex++;
-			index++;
+            //Go through to_parse until we have processed all commands
+            while(index < strlen(to_parse) && !complete){
 
 
-			//If we reach the end of the input command / list of commands
-			//Process final command where CPrintList is called
-			if(index >= strlen(to_parse)){
-				if(strlen(myCommand) != 0){
-					myCommand[commandIndex-1] = '\0';
-					strcpy(acommand[aindex], myCommand);
-					aindex++;
-					memcpy(myCommand, "\0", 100);
-					commandIndex = 0;
-				}
-				memcpy(acommand[aindex], "\0", 50);
-				forkAndKnife(acommand, aindex, fd, isFirst, 1);
-				
-				/*empty out string holding command*/
-				int i = 0;
-				while(i < aindex){
-					memcpy(acommand[i], "\0", 50);
-					i++;
-				}
-				complete = 1;
-			}
-		}
+                //If we hit a " then get the full argument
+                if(to_parse[index] == '\"'){
+                    index++;
+                    while((to_parse[index] != '\"') && (index < strlen(to_parse))){
+                        myCommand[commandIndex] = to_parse[index];
+                        commandIndex++;
+                        index++;
+                    }
+                    index++;
+
+                    if(strlen(myCommand) != 0){
+                        myCommand[commandIndex] = '\0';
+                        strcpy(acommand[aindex], myCommand);
+                        aindex++;
+                        memcpy(myCommand, "\0", 100);
+                        commandIndex = 0;
+                    }
+                    continue;
+                }
+                //If we hit a ' then get the full argument
+                if(to_parse[index] == '\''){
+                    index++;
+                    while((to_parse[index] != '\'') && (index < strlen(to_parse))){
+                        myCommand[commandIndex] = to_parse[index];
+                        commandIndex++;
+                        index++;
+                    }
+                    index++;
+
+                    if(strlen(myCommand) != 0){
+                        myCommand[commandIndex] = '\0';
+                        strcpy(acommand[aindex], myCommand);
+                        aindex++;
+                        memcpy(myCommand, "\0", 100);
+                        commandIndex = 0;
+                    }
+                    continue;
+                }
+                //If we hit a space, store the argument in the list
+                if(to_parse[index] == ' '){
+                    index++;
+                    if(strlen(myCommand) != 0){
+                        myCommand[commandIndex] = '\0';
+                        strcpy(acommand[aindex], myCommand);
+                        aindex++;
+                        memcpy(myCommand, "\0", 100);
+                        commandIndex = 0;
+                        continue;
+                    }
+                }
+
+                //If we hit a pipe, entire argument is stored in list and ready for processing
+                //Process where CPrintList is called
+                if(to_parse[index] == '|'){
+                    index++;
+                    if(strlen(myCommand) != 0){
+                        myCommand[commandIndex] = '\0';
+                        strcpy(acommand[aindex], myCommand);
+                        aindex++;
+                        memcpy(myCommand, "\0", 100);
+                        commandIndex = 0;
+                    }
+                    commandIndex = 0;
+                    memcpy(myCommand, "\0", 100);
+
+                            forkAndKnife(acommand, aindex, fd, isFirst, 0); //Execute command
+                    isFirst = 0;
+
+                    /*Empty out string holding command*/
+                    int i = 0;
+                    while(i < aindex){
+                        memcpy(acommand[i], "\0", 50);
+                        i++;
+                    }
+                    aindex = 0;
+                    continue;
+                }
+                if(to_parse[index] != '\n'){
+                    myCommand[commandIndex] = to_parse[index];
+                }
+                commandIndex++;
+                index++;
+
+
+                //If we reach the end of the input command / list of commands
+                //Process final command where CPrintList is called
+                if(index >= strlen(to_parse)){
+                    if(strlen(myCommand) != 0){
+                        myCommand[commandIndex-1] = '\0';
+                        strcpy(acommand[aindex], myCommand);
+                        aindex++;
+                        memcpy(myCommand, "\0", 100);
+                        commandIndex = 0;
+                    }
+                    memcpy(acommand[aindex], "\0", 50);
+                    forkAndKnife(acommand, aindex, fd, isFirst, 1);
+
+                    /*empty out string holding command*/
+                    int i = 0;
+                    while(i < aindex){
+                        memcpy(acommand[i], "\0", 50);
+                        i++;
+                    }
+                    complete = 1;
+                }
+            }
 
     		//forkAndKnife(acommand);
     		//fputs(to_parse,stdout);
-		close(fd[0]); close(fd[1]);	//close pipes.
+            close(fd[0]); close(fd[1]);	//close pipes.
     		waitingRoom();			//Wait for child processes to die
         	printf("\n$>");
 	}
@@ -185,14 +199,17 @@ void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int i
 	int pid;
 	int i = 0;
 
-	char* pcommand [50];	
+	char* pcommand [50];
 
 	while(i < index){
 		pcommand[i] = acommand[i];
-		i++;	
+		i++;
 	}
 
 	pcommand[index] = NULL;
+
+	if(searchFuncTable(pcommand) == 1)
+        return;
 
 	switch(pid = fork()){
 	//Child process case
@@ -211,13 +228,13 @@ void forkAndKnife(char acommand[50][50], int index, int pfd[],int isFirst, int i
 			dup2(pfd[1],1);
 		}
 		execvp(pcommand[0], pcommand);
-		perror("failed execlp");
+		perror("execlp");
 		exit(1);
 
 		break;
 	//fork() fails case
 	case -1:
-		perror("failed fork");
+		perror("fork");
 		exit(1);
 		break;
 	//Parent process case
@@ -238,6 +255,50 @@ void waitingRoom(){
 		//Parent prints the exit status of each completed child process.
 		fprintf(stderr, "Child process %d exits with %d.\n",pid, WEXITSTATUS(status));
 	return;
+}
+
+int cdFunc(int argc, char *argv[]){
+    /*check number of elements*/
+  //  if(argc > 3){
+        fprintf(stderr,"cd: number of arguments\n%d\n",argc);
+    //     return;
+    //}
+    char* dir = getenv("HOME"); //Default to home environment.
+    if(argc > 2)
+        dir = argv[1];
+    int ret = chdir(dir);
+    if(ret == 0){
+        fprintf(stderr,"%s",getcwd(NULL,0));
+    }else{
+        perror("chdir");
+        return 1;
+    }
+    return 0;
+}
+
+int exitFunc(int argc, char *argv[]){
+    long int code = 0;
+    if(argc != 1)
+        code = strtol(argv[1],NULL,10);
+    exit(code);
+    return 0;
+}
+
+int searchFuncTable(char *command[]){
+    int i = 0;
+    fprintf(stderr,"Built in function: %s\n",command[0]);
+    for(; i<2;i++){     //Search function table
+        if(strcmp(command[0],funcTable[i].name) == 0){  //If function found...
+            int argc = sizeof(command)/sizeof(command[0]);
+            int a = 0;
+            for(;a < argc;a++){
+                fprintf(stderr,"%s\n",command[a]);
+            }
+            int fnc = (*(funcTable[i].fnc))(argc,command);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /*Creates a new linked list.*/
